@@ -5,6 +5,8 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String, Float
 
+from flask_marshmallow import Marshmallow
+
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -12,6 +14,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(basedir, 'plan
 
 # Initialize db before I can start using it.
 db = SQLAlchemy(app)
+# Instantiate flask-marshmallow serialization tool
+ma = Marshmallow(app)
 
 
 class User(db.Model):
@@ -35,6 +39,24 @@ class Planet(db.Model):
     mass = Column(Float)
     radius = Column(Float)
     distance = Column(Float)
+
+
+class UserSchema(ma.Schema):
+    """User object serializer."""
+    class Meta:
+        fields = ("id", "firstname", "lastname", "email", "password")
+
+
+class PlanetSchema(ma.Schema):
+    """Planet object serializer."""
+    class Meta:
+        fields = ("planet_id", "planet_name", "planet_type", "home_star", "mass", "radius", "distance")
+
+
+user_schema = UserSchema()
+users_schema = UserSchema(many=True)
+planet_schema = PlanetSchema()
+planets_schema = PlanetSchema(many=True)
 
 
 # DB scripts
@@ -124,10 +146,21 @@ def url_variables(name: str, age: int):
         return jsonify(message=f"Welcome back {name.title()}.")
 
 
-@app.route("/planets/", methods=["GET"])
+@app.route("/planets", methods=["GET"])
 def list_planets():
     """List all planets"""
     planets = Planet.query.all()
+    results = planets_schema.dump(planets)
+    return jsonify(results)
+
+
+@app.route("/planets/", methods=["GET"])
+def planet_detail():
+    planet_id = request.args.get("planet_id")
+    planet = Planet.query.filter(planet_id=planet_id).first()
+    result = planet_schema.dump(planet)
+    print(result)
+    return jsonify(result)
 
 
 if __name__ == '__main__':
