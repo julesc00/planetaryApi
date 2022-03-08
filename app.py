@@ -227,13 +227,15 @@ def retrieve_password(email: str):
         return jsonify(message="That email doesn't exists."), 401
 
 
-# @app.route("/planets/", methods=["GET"])
-# def planet_detail():
-#     planet_id = request.args.get("planet_id")
-#     planet = Planet.query.filter_by(planet_id=planet_id).first()
-#     result = planet_schema.dump(planet)
-#     print(result)
-#     return jsonify(result)
+@app.route("/planet_detail/<int:planet_id>", methods=["GET"])
+def planet_details(planet_id: int):
+    planet = Planet.query.filter_by(planet_id=planet_id).first()
+    if planet:
+        result = planet_schema.dump(planet)
+        print(planet)
+        return jsonify(result)
+    else:
+        return jsonify(message="Such planet does not exists"), 404
 
 
 if __name__ == '__main__':
